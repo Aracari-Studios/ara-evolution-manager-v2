@@ -2,7 +2,16 @@ import "./style.css";
 import { Avatar, AvatarFallback, AvatarImage } from "@evoapi/design-system/avatar";
 import { Button } from "@evoapi/design-system/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, MessageCircle, Search, User, Users } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowLeft, MessageCircle, PlusCircle, Search, User, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
@@ -36,6 +45,10 @@ function Chat() {
   const [realtimeChats, setRealtimeChats] = useState<ChatType[]>([]);
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<ChatKind>("contacts");
+  const [caseDialogOpen, setCaseDialogOpen] = useState(false);
+  const [caseTitle, setCaseTitle] = useState("");
+  const [caseDescription, setCaseDescription] = useState("");
+  const [caseSubmitting, setCaseSubmitting] = useState(false);
 
   const { data: chats } = useFindChats({ instanceName: instance?.name });
 
@@ -176,6 +189,16 @@ function Chat() {
             <span className="text-xs text-muted-foreground">
               {t("chat.count", { count: visibleChats.length })}
             </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              className="h-7 px-2 text-xs"
+              onClick={() => setCaseDialogOpen(true)}
+            >
+              <PlusCircle className="mr-1 h-3.5 w-3.5" />
+              Crear caso
+            </Button>
           </div>
         </div>
 
@@ -266,6 +289,97 @@ function Chat() {
           </div>
         )}
       </main>
+
+      <Dialog
+        open={caseDialogOpen}
+        onOpenChange={(open) => {
+          setCaseDialogOpen(open);
+          if (!open) {
+            setCaseTitle("");
+            setCaseDescription("");
+            setCaseSubmitting(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear caso</DialogTitle>
+            <DialogDescription>
+              Registra un caso de soporte a partir de este chat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label htmlFor="case-title" className="text-sm font-medium">
+                Título
+              </label>
+              <Input
+                id="case-title"
+                value={caseTitle}
+                onChange={(e) => setCaseTitle(e.target.value)}
+                placeholder="Ej. Soporte urgente"
+                maxLength={120}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="case-description" className="text-sm font-medium">
+                Descripción
+              </label>
+              <Textarea
+                id="case-description"
+                value={caseDescription}
+                onChange={(e) => setCaseDescription(e.target.value)}
+                placeholder="Detalle del caso"
+                rows={4}
+                maxLength={2000}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setCaseDialogOpen(false)}
+              disabled={caseSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={async () => {
+                if (!caseTitle.trim() || caseSubmitting) return;
+                setCaseSubmitting(true);
+                try {
+                  const token = getToken(TOKEN_ID.TOKEN) || "";
+                  const baseUrl =
+                    (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+                  await fetch(`${baseUrl}/chat/create-case`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      apikey: token,
+                    },
+                    body: JSON.stringify({
+                      instanceName: instance?.name,
+                      title: caseTitle.trim(),
+                      description: caseDescription.trim(),
+                    }),
+                  }).catch(() => null);
+                } finally {
+                  setCaseSubmitting(false);
+                  setCaseDialogOpen(false);
+                  setCaseTitle("");
+                  setCaseDescription("");
+                }
+              }}
+            >
+              Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
