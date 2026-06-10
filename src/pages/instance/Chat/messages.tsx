@@ -1,15 +1,13 @@
-import { Send, User } from "lucide-react";
+import { Send } from "lucide-react";
 import { RefObject, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@evoapi/design-system/avatar";
 import { Button } from "@evoapi/design-system/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useInstance } from "@/contexts/InstanceContext";
 
-import { useFindChat } from "@/lib/queries/chat/findChat";
 import { useFindMessages } from "@/lib/queries/chat/findMessages";
 import { useSendMessage, useSendMedia } from "@/lib/queries/chat/sendMessage";
 import { getToken, TOKEN_ID } from "@/lib/queries/token";
@@ -412,11 +410,6 @@ function Messages({ textareaRef, handleTextareaChange, textareaHeight, lastMessa
     setMessageText(e.target.value);
     handleTextareaChange();
   };
-  const { data: chat } = useFindChat({
-    remoteJid,
-    instanceName: instance?.name,
-  });
-
   const { data: messages, isSuccess } = useFindMessages({
     remoteJid,
     instanceName: instance?.name,
@@ -613,25 +606,8 @@ function Messages({ textareaRef, handleTextareaChange, textareaHeight, lastMessa
     );
   };
 
-  const headerName = chat?.pushName || chat?.remoteJid?.split("@")[0];
-  const headerSub = chat?.remoteJid?.split("@")[0];
-
   return (
     <div className="flex h-full flex-col bg-muted/10">
-      <div className="flex-shrink-0 border-b bg-background/95 p-4 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={chat?.profilePicUrl} alt={headerName} />
-            <AvatarFallback className="bg-muted text-muted-foreground">
-              <User className="h-5 w-5" />
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-semibold">{headerName}</h3>
-            <p className="truncate text-xs text-muted-foreground">{headerSub}</p>
-          </div>
-        </div>
-      </div>
       <div className="flex w-full flex-1 flex-col overflow-y-auto px-4 py-4">
         {groupedMessages.map((group, groupIndex) => (
           <div key={groupIndex}>
