@@ -12,13 +12,39 @@ interface IParams {
 const queryKey = (params: Partial<IParams>) => ["chats", "findMessages", JSON.stringify(params)];
 
 export const findMessages = async ({ instanceName, remoteJid }: IParams) => {
-  const response = await api.post(`/chat/findMessages/${instanceName}`, {
+  const basePayload = {
     where: { key: { remoteJid } },
-  });
-  if (response.data?.messages?.records) {
-    return response.data.messages.records;
+  };
+
+  const firstResponse = await api.post(`/chat/findMessages/${instanceName}`, basePayload);
+  const firstMessages = firstResponse.data?.messages;
+
+  if (!firstMessages?.records) {
+    return firstResponse.data;
   }
-  return response.data;
+
+  const totalPages = Number(firstMessages.pages || 1);
+  const allRecords = [...firstMessages.records];
+
+  if (totalPages > 1) {
+    const pageResponses = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) =>
+        api.post(`/chat/findMessages/${instanceName}`, {
+          ...basePayload,
+          page: index + 2,
+        }),
+      ),
+    );
+
+    pageResponses.forEach((response) => {
+      const records = response.data?.messages?.records;
+      if (Array.isArray(records)) {
+        allRecords.push(...records);
+      }
+    });
+  }
+
+  return allRecords;
 };
 
 export const useFindMessages = (props: UseQueryParams<FindMessagesResponse> & Partial<IParams>) => {
