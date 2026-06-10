@@ -140,6 +140,12 @@ function Chat() {
   }, [allChats, kind, search]);
 
   const showSidebar = !remoteJid || isMD;
+
+  const currentChat = useMemo(
+    () => (remoteJid ? allChats.find((c) => c.remoteJid === remoteJid) ?? null : null),
+    [allChats, remoteJid],
+  );
+  const currentChatName = currentChat?.pushName || (remoteJid ? formatJid(remoteJid) : "");
   const showChat = !!remoteJid;
 
   return (
@@ -189,16 +195,6 @@ function Chat() {
             <span className="text-xs text-muted-foreground">
               {t("chat.count", { count: visibleChats.length })}
             </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="default"
-              className="h-7 px-2 text-xs"
-              onClick={() => setCaseDialogOpen(true)}
-            >
-              <PlusCircle className="mr-1 h-3.5 w-3.5" />
-              Crear caso
-            </Button>
           </div>
         </div>
 
@@ -267,6 +263,30 @@ function Chat() {
                 </Button>
               </div>
             )}
+            <div className="flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur-sm">
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar className="h-9 w-9">
+                  {currentChat?.profilePicUrl ? (
+                    <AvatarImage src={currentChat.profilePicUrl} alt={currentChatName} />
+                  ) : null}
+                  <AvatarFallback>{currentChatName.slice(0, 2).toUpperCase() || "??"}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{currentChatName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{remoteJid}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                className="h-8 px-3 text-xs"
+                onClick={() => setCaseDialogOpen(true)}
+              >
+                <PlusCircle className="mr-1 h-3.5 w-3.5" />
+                Crear caso
+              </Button>
+            </div>
             <Messages
               textareaRef={textareaRef}
               handleTextareaChange={handleTextareaChange}
@@ -363,6 +383,8 @@ function Chat() {
                     },
                     body: JSON.stringify({
                       instanceName: instance?.name,
+                      remoteJid,
+                      pushName: currentChat?.pushName ?? null,
                       title: caseTitle.trim(),
                       description: caseDescription.trim(),
                     }),
